@@ -7,9 +7,11 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 const (
@@ -37,7 +39,8 @@ var (
 	version = flag.Bool("version", false, version_text)
 )
 
-func processFlags() {
+func main() {
+	flag.Parse()
 	if *help {
 		fmt.Println(help_text)
 		os.Exit(0)
@@ -47,9 +50,35 @@ func processFlags() {
 		fmt.Println(version_text)
 		os.Exit(0)
 	}
-}
 
-func main() {
-	flag.Parse()
-	processFlags()
+	var input string
+	var fp *os.File
+	var err error
+
+	switch {
+	case flag.NArg() < 1 || flag.Arg(0) == "-":
+		input = "-"
+		fp = os.Stdin
+	case flag.NArg() == 1:
+		input = flag.Arg(0)
+		fp, err = os.Open(input)
+		if err != nil {
+			panic(err)
+		}
+		defer fp.Close()
+	default:
+		fmt.Fprintf(os.Stdout, "extra operand %s\n", flag.Arg(1))
+		os.Exit(1)
+	}
+
+	scanner := bufio.NewScanner(fp)
+	for scanner.Scan() {
+		var nodes = strings.Fields(scanner.Text())
+		if len(nodes) > 2 {
+			fmt.Fprintf(os.Stdout, "%s: input contains an odd number of tokens\n", input)
+			os.Exit(1)
+		}
+	}
+
+	os.Exit(0)
 }
